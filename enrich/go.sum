@@ -208,8 +208,8 @@ github.com/meroxa/funtime v0.0.0-20220204184159-a95fe9096b8a h1:2rx6qqFIrLZH2mwr
 github.com/meroxa/funtime v0.0.0-20220204184159-a95fe9096b8a/go.mod h1:szKX3ztLrTSq1gaJ7RX5E9gl6uYaa2rBHBv+R/g6l40=
 github.com/meroxa/meroxa-go v0.0.0-20220208195203-71ddc3133fab h1:EzZzmvjyU+U/8ecHt0QmKbJQs4293wms3EeapctnBME=
 github.com/meroxa/meroxa-go v0.0.0-20220208195203-71ddc3133fab/go.mod h1:HDFszURCM1cOpKE699o5Hs0T2tEIXqY+vFcsur3RiwY=
-github.com/meroxa/turbine v0.0.0-20220210150042-4103f553adcb h1:lpxPTXr27KjOTs5sp6aUvD9f5jhiD2hViAI2DcGZbUA=
-github.com/meroxa/turbine v0.0.0-20220210150042-4103f553adcb/go.mod h1:4A2E9icHDi3x4Flp9CunWyRBvNkZy6h8MS8zLvWUlmw=
+github.com/meroxa/turbine v0.0.0-20220210211642-648aca11b68a h1:+3R/hSo/lEwMtH/W9sTixeqnoP73qH5AsIuJQFZYWX8=
+github.com/meroxa/turbine v0.0.0-20220210211642-648aca11b68a/go.mod h1:4A2E9icHDi3x4Flp9CunWyRBvNkZy6h8MS8zLvWUlmw=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/go-homedir v1.0.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
