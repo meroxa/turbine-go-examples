@@ -3,9 +3,10 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"log"
+
 	"github.com/meroxa/valve"
 	"github.com/meroxa/valve/runner"
-	"log"
 )
 
 func main() {
@@ -43,8 +44,8 @@ type Anonymize struct{}
 
 func (f Anonymize) Process(rr []valve.Record) ([]valve.Record, []valve.RecordWithError) {
 	for i, r := range rr {
-		hashedEmail := consistentHash(r.Payload.Get("payload.email").(string))
-		err := r.Payload.Set("payload.email", hashedEmail)
+		hashedEmail := consistentHash(r.Payload.Get("email").(string))
+		err := r.Payload.Set("email", hashedEmail)
 		if err != nil {
 			log.Println("error setting value: ", err)
 			break
