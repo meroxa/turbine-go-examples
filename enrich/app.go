@@ -1,11 +1,10 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"log"
+
 	"github.com/meroxa/valve"
 	"github.com/meroxa/valve/runner"
-	"log"
 )
 
 func main() {
