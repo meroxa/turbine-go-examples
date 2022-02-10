@@ -3,19 +3,19 @@ package main
 import (
 	"log"
 
-	"github.com/meroxa/valve"
-	"github.com/meroxa/valve/runner"
+	"github.com/meroxa/turbine"
+	"github.com/meroxa/turbine/runner"
 )
 
 func main() {
 	runner.Start(App{})
 }
 
-var _ valve.App = (*App)(nil)
+var _ turbine.App = (*App)(nil)
 
 type App struct{}
 
-func (a App) Run(v valve.Valve) error {
+func (a App) Run(v turbine.Turbine) error {
 	db, err := v.Resources("demopg")
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func (a App) Run(v valve.Valve) error {
 
 type EnrichUserData struct{}
 
-func (f EnrichUserData) Process(rr []valve.Record) ([]valve.Record, []valve.RecordWithError) {
+func (f EnrichUserData) Process(rr []turbine.Record) ([]turbine.Record, []turbine.RecordWithError) {
 	for i, r := range rr {
 		log.Printf("Got email: %s", r.Payload.Get("email"))
 		UserDetails, err := EnrichUserEmail(r.Payload.Get("email").(string))
