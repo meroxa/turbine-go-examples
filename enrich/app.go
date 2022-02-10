@@ -33,33 +33,12 @@ func (a App) Run(v valve.Valve) error {
 	}
 	res, _ := v.Process(rr, EnrichUserData{})
 
-	//s3, err := v.Resources("s3")
-	//err = s3.Write(res, "user_activity_enriched", nil)
-	//if err != nil {
-	//	return err
-	//}
-
 	err = db.Write(res, "user_activity_enriched", nil)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-type Anonymize struct{}
-
-func (f Anonymize) Process(rr []valve.Record) ([]valve.Record, []valve.RecordWithError) {
-	for i, r := range rr {
-		hashedEmail := consistentHash(r.Payload.Get("payload.email").(string))
-		err := r.Payload.Set("payload.email", hashedEmail)
-		if err != nil {
-			log.Println("error setting value: ", err)
-			break
-		}
-		rr[i] = r
-	}
-	return rr, nil
 }
 
 type EnrichUserData struct{}
@@ -86,9 +65,4 @@ func (f EnrichUserData) Process(rr []valve.Record) ([]valve.Record, []valve.Reco
 	}
 
 	return rr, nil
-}
-
-func consistentHash(s string) string {
-	h := md5.Sum([]byte(s))
-	return hex.EncodeToString(h[:])
 }
