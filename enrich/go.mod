@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/clearbit/clearbit-go v1.1.0
-	github.com/meroxa/turbine v0.0.0-20220210150042-4103f553adcb
+	github.com/meroxa/turbine v0.0.0-20220210211642-648aca11b68a
 )
 
 require (

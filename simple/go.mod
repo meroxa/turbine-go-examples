@@ -2,7 +2,7 @@ module meroxa/turbine-go-examples/simple
 
 go 1.17
 
-require github.com/meroxa/turbine v0.0.0-20220210150042-4103f553adcb
+require github.com/meroxa/turbine v0.0.0-20220210211642-648aca11b68a
 
 require (
 	github.com/caarlos0/env/v6 v6.7.2 // indirect
