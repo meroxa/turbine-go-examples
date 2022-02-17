@@ -20,7 +20,7 @@ github.com/meroxa/funtime/proto
 # github.com/meroxa/meroxa-go v0.0.0-20220208195203-71ddc3133fab
 ## explicit; go 1.17
 github.com/meroxa/meroxa-go/pkg/meroxa
-# github.com/meroxa/turbine v0.0.0-20220210150042-4103f553adcb
+# github.com/meroxa/turbine v0.0.0-20220215220759-6865e405b0dd
 ## explicit; go 1.17
 github.com/meroxa/turbine
 github.com/meroxa/turbine/local
