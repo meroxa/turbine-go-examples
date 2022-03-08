@@ -1,5 +1,6 @@
 {
   "name": "enrich",
+  "language": "golang",
   "environment": "common",
   "pipeline": "default",
   "resources": {
