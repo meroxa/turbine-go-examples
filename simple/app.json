@@ -2,7 +2,6 @@
   "name": "simple",
   "language": "golang",
   "environment": "common",
-  "pipeline": "default",
   "resources": {
     "demopg": "fixtures/pg.json",
     "sfdwh": "fixtures/sfdwh.json"
