@@ -2,6 +2,7 @@
   "name": "enrich",
   "environment": "common",
   "pipeline": "default",
+  "language": "golang",
   "resources": {
     "demopg": "fixtures/pg.json",
     "sfdwh": "fixtures/sfdwh.json"
