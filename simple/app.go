@@ -32,6 +32,9 @@ func (a App) Run(v turbine.Turbine) error {
 	// second return is dead-letter queue
 
 	s3, err := v.Resources("s3")
+	if err != nil {
+		return err
+	}
 	err = s3.Write(res, "data-app-archive", nil)
 	if err != nil {
 		return err
