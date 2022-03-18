@@ -24,7 +24,7 @@ func EnrichUserEmail(email string) (*UserDetails, error) {
 	})
 
 	if err != nil {
-		log.Printf("error looking up email; resp: %%+v", resp.Status)
+		log.Printf("error looking up email; resp: %+v", resp.Status)
 		return nil, err
 	}
 
