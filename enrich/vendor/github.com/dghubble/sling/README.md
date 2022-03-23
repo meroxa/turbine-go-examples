@@ -1,6 +1,6 @@
+# Sling [![Build Status](https://github.com/dghubble/sling/workflows/test/badge.svg)](https://github.com/dghubble/oauth1/actions?query=workflow%3Atest+branch%3Amaster) [![Coverage](https://gocover.io/_badge/github.com/dghubble/sling)](https://gocover.io/github.com/dghubble/sling) [![GoDoc](https://godoc.org/github.com/dghubble/sling?status.svg)](https://godoc.org/github.com/dghubble/sling)
 
-# Sling [![Build Status](https://travis-ci.org/dghubble/sling.png?branch=master)](https://travis-ci.org/dghubble/sling) [![GoDoc](https://godoc.org/github.com/dghubble/sling?status.png)](https://godoc.org/github.com/dghubble/sling)
-<img align="right" src="https://s3.amazonaws.com/dghubble/small-gopher-with-sling.png">
+<img align="right" src="https://storage.googleapis.com/dghubble/small-gopher-with-sling.png">
 
 Sling is a Go HTTP client library for creating and sending API requests.
 
@@ -17,7 +17,9 @@ Slings store HTTP Request properties to simplify sending requests and decoding r
 
 ## Install
 
-    go get github.com/dghubble/sling
+```
+go get github.com/dghubble/sling
+```
 
 ## Documentation
 
@@ -46,7 +48,7 @@ Use `Path` to set or extend the URL for created Requests. Extension means the pa
 req, err := sling.New().Base("https://example.com/").Path("foo/").Path("bar").Request()
 ```
 
-Use `Get`, `Post`, `Put`, `Patch`, `Delete`, or `Head` which are exactly the same as `Path` except they set the HTTP method too.
+Use `Get`, `Post`, `Put`, `Patch`, `Delete`, `Head`, `Options`, `Trace`, or `Connect` which are exactly the same as `Path` except they set the HTTP method too.
 
 ```go
 req, err := sling.New().Post("http://upload.com/gophers")
@@ -215,6 +217,27 @@ fmt.Println(issues, githubError, resp, err)
 
 Pass a nil `successV` or `failureV` argument to skip JSON decoding into that value.
 
+### Modify a Request
+
+Sling provides the raw http.Request so modifications can be made using standard net/http features. For example, in Go 1.7+ , add HTTP tracing to a request with a context:
+
+```go
+req, err := sling.New().Get("https://example.com").QueryStruct(params).Request()
+// handle error
+
+trace := &httptrace.ClientTrace{
+   DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+      fmt.Printf("DNS Info: %+v\n", dnsInfo)
+   },
+   GotConn: func(connInfo httptrace.GotConnInfo) {
+      fmt.Printf("Got Conn: %+v\n", connInfo)
+   },
+}
+
+req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+client.Do(req)
+```
+
 ### Build an API
 
 APIs typically define an endpoint (also called a service) for each type of resource. For example, here is a tiny Github IssueService which [lists](https://developer.github.com/v3/issues/#list-issues-for-a-repository) repository issues.
@@ -250,10 +273,8 @@ func (s *IssueService) ListByRepo(owner, repo string, params *IssueListParams) (
 * GoSquared [drinkin/go-gosquared](https://github.com/drinkin/go-gosquared)
 * Kala [ajvb/kala](https://github.com/ajvb/kala)
 * Parse [fergstar/go-parse](https://github.com/fergstar/go-parse)
-* Rdio [apriendeau/shares](https://github.com/apriendeau/shares)
 * Swagger Generator [swagger-api/swagger-codegen](https://github.com/swagger-api/swagger-codegen)
 * Twitter [dghubble/go-twitter](https://github.com/dghubble/go-twitter)
-* Hacker News [mirceamironenco/go-hackernews](https://github.com/mirceamironenco/go-hackernews)
 * Stacksmith [jesustinoco/go-smith](https://github.com/jesustinoco/go-smith)
 
 Create a Pull Request to add a link to your own API.
