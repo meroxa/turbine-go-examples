@@ -20,7 +20,7 @@ github.com/meroxa/funtime/proto
 # github.com/meroxa/meroxa-go v0.0.0-20220208195203-71ddc3133fab
 ## explicit; go 1.17
 github.com/meroxa/meroxa-go/pkg/meroxa
-# github.com/meroxa/turbine v0.0.0-20220315122820-92658c705129
+# github.com/meroxa/turbine v0.0.0-20220315122820-92658c705129 => ../../turbine
 ## explicit; go 1.17
 github.com/meroxa/turbine
 github.com/meroxa/turbine/local
@@ -156,3 +156,4 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
+# github.com/meroxa/turbine => ../../turbine
