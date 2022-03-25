@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/clearbit/clearbit-go v1.1.0
-	github.com/meroxa/turbine v0.0.0-20220315122820-92658c705129
+	github.com/meroxa/turbine v0.0.0-20220325214222-1cf77d27003f
 )
 
 require (
@@ -37,5 +37,3 @@ require (
 	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )
-
-replace github.com/meroxa/turbine => ../../turbine
