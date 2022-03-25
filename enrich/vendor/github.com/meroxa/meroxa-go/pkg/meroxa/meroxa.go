@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/volatiletech/null/v8"
 )
 
 const (
@@ -22,6 +25,21 @@ type EnvironmentIdentifier struct {
 	Name string `json:"name,omitempty"`
 }
 
+// EntityIdentifier represents one or both values for a Meroxa Entity
+type EntityIdentifier struct {
+	UUID null.String `json:"uuid,omitempty"`
+	Name null.String `json:"name,omitempty"`
+}
+
+func (e EntityIdentifier) GetNameOrUUID() (string, error) {
+	if e.Name.Valid {
+		return e.Name.String, nil
+	} else if e.UUID.Valid {
+		return e.UUID.String, nil
+	}
+	return "", fmt.Errorf("identifier has neither name or UUID")
+}
+
 // client represents the Meroxa API Client
 type client struct {
 	baseURL   *url.URL
@@ -33,6 +51,11 @@ type client struct {
 
 // Client represents the interface to the Meroxa API
 type Client interface {
+	CreateApplication(ctx context.Context, input *CreateApplicationInput) (*Application, error)
+	DeleteApplication(ctx context.Context, name string) error
+	GetApplication(ctx context.Context, name string) (*Application, error)
+	ListApplications(ctx context.Context) ([]*Application, error)
+
 	CreateConnector(ctx context.Context, input *CreateConnectorInput) (*Connector, error)
 	DeleteConnector(ctx context.Context, nameOrID string) error
 	GetConnectorByNameOrID(ctx context.Context, nameOrID string) (*Connector, error)
@@ -43,6 +66,7 @@ type Client interface {
 
 	CreateFunction(ctx context.Context, input *CreateFunctionInput) (*Function, error)
 	GetFunction(ctx context.Context, nameOrUUID string) (*Function, error)
+	GetFunctionLogs(ctx context.Context, nameOrUUID string) (*http.Response, error)
 	ListFunctions(ctx context.Context) ([]*Function, error)
 	DeleteFunction(ctx context.Context, nameOrUUID string) (*Function, error)
 
