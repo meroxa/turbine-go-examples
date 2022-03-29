@@ -35,7 +35,7 @@ github.com/meroxa/funtime/proto
 # github.com/meroxa/meroxa-go v0.0.0-20220318172432-2102d4a6c745
 ## explicit; go 1.17
 github.com/meroxa/meroxa-go/pkg/meroxa
-# github.com/meroxa/turbine v0.0.0-20220325214222-1cf77d27003f
+# github.com/meroxa/turbine v0.0.0-20220329174128-2c9cd09a5919
 ## explicit; go 1.17
 github.com/meroxa/turbine
 github.com/meroxa/turbine/local
@@ -126,6 +126,8 @@ google.golang.org/grpc/credentials/insecure
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
+google.golang.org/grpc/health
+google.golang.org/grpc/health/grpc_health_v1
 google.golang.org/grpc/internal
 google.golang.org/grpc/internal/backoff
 google.golang.org/grpc/internal/balancerload
