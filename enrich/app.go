@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/meroxa/turbine"
-	"github.com/meroxa/turbine/runner"
+	"github.com/meroxa/turbine-go"
+	"github.com/meroxa/turbine-go/runner"
 )
 
 func main() {
