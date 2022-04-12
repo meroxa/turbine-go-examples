@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/meroxa/meroxa-go/pkg/meroxa"
-	"github.com/meroxa/turbine"
+	"github.com/meroxa/turbine-go"
 )
 
 type Turbine struct {
@@ -227,11 +227,6 @@ func (t Turbine) Process(rr turbine.Records, fn turbine.Function) (turbine.Recor
 	}
 
 	return out, outE
-}
-
-func (t Turbine) TriggerFunction(name string, in []turbine.Record) ([]turbine.Record, []turbine.RecordWithError) {
-	log.Printf("Triggered function %s", name)
-	return nil, nil
 }
 
 func (t Turbine) GetFunction(name string) (turbine.Function, bool) {

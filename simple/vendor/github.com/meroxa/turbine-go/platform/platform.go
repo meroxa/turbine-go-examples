@@ -24,8 +24,6 @@ type Turbine struct {
 }
 
 func New(deploy bool, imageName string) Turbine {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
 	c, err := newClient()
 	if err != nil {
 		log.Fatalln(err)
@@ -229,11 +227,6 @@ func (t Turbine) Process(rr turbine.Records, fn turbine.Function) (turbine.Recor
 	}
 
 	return out, outE
-}
-
-func (t Turbine) TriggerFunction(name string, in []turbine.Record) ([]turbine.Record, []turbine.RecordWithError) {
-	log.Printf("Triggered function %s", name)
-	return nil, nil
 }
 
 func (t Turbine) GetFunction(name string) (turbine.Function, bool) {

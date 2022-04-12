@@ -35,12 +35,12 @@ github.com/meroxa/funtime/proto
 # github.com/meroxa/meroxa-go v0.0.0-20220318172432-2102d4a6c745
 ## explicit; go 1.17
 github.com/meroxa/meroxa-go/pkg/meroxa
-# github.com/meroxa/turbine v0.0.0-20220329174128-2c9cd09a5919
+# github.com/meroxa/turbine-go v0.0.0-20220411183628-9c66511742c3
 ## explicit; go 1.17
-github.com/meroxa/turbine
-github.com/meroxa/turbine/local
-github.com/meroxa/turbine/platform
-github.com/meroxa/turbine/runner
+github.com/meroxa/turbine-go
+github.com/meroxa/turbine-go/local
+github.com/meroxa/turbine-go/platform
+github.com/meroxa/turbine-go/runner
 # github.com/oklog/run v1.1.1-0.20200508094559-c7096881717e
 ## explicit; go 1.13
 github.com/oklog/run
