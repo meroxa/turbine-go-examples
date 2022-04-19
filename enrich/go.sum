@@ -219,6 +219,8 @@ github.com/meroxa/meroxa-go v0.0.0-20220318172432-2102d4a6c745 h1:RKrOPxLFcYJGFE
 github.com/meroxa/meroxa-go v0.0.0-20220318172432-2102d4a6c745/go.mod h1:BsqYa9jqfyGOAgfkggfK567b2Ahkb+RCH3lXDQGgrh8=
 github.com/meroxa/turbine-go v0.0.0-20220405102922-2d9a299a1e02 h1:KySJ7e2MczIWbsMtbZInNXioiPB95vptjkbPlL1TLRU=
 github.com/meroxa/turbine-go v0.0.0-20220405102922-2d9a299a1e02/go.mod h1:F4ODyjX+tn5dYFRc1bQlHLUnTtlJIxs09AKHqfCD5Cg=
+github.com/meroxa/turbine-go v0.0.0-20220419083802-4f83d9343ce6 h1:vMXfEM3/9+Q4wOKMoYYFbCe0d3bOW3iCiLRhW5blmgo=
+github.com/meroxa/turbine-go v0.0.0-20220419083802-4f83d9343ce6/go.mod h1:F4ODyjX+tn5dYFRc1bQlHLUnTtlJIxs09AKHqfCD5Cg=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/go-homedir v1.0.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
