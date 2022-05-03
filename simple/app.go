@@ -35,7 +35,7 @@ func (a App) Run(v turbine.Turbine) error {
 	if err != nil {
 		return err
 	}
-	err = s3.Write(res, "data-app-archive", nil)
+	err = s3.Write(res, "data-app-archive")
 	if err != nil {
 		return err
 	}
