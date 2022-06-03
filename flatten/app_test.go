@@ -1,15 +1,28 @@
 package main
 
-import "testing"
+import (
+	"github.com/meroxa/turbine-go"
+	"testing"
+)
 
-// This unit test example uses the Go standard library built-in `testing` package
-// However, you may use any testing framework of your choice
-// To learn more about how to use this testing framework
-// refer to the Go `testing` package documentation https://pkg.go.dev/testing
-// All unit test files must end with `_test.go`
-// Use the `go test` command to execute test files within your Go project
+func TestFlattenTransform(t *testing.T) {
+	r := turbine.Record{
+		Key:     "1",
+		Payload: []byte(`{"id": 1, "user": {"id": 100, "name": "alice", "email": "alice@example.com"}, "actions": ["register", "purchase"]}`),
+	}
 
-// Replace `TestAnonymizeProcess` with your own unit test. This will fail automatically.
-func TestAnonymizeProcess(t *testing.T) {
-	t.Fatalf("Almost there! Configure your data stores as resources and specify records to get started.")
+	out := Flatten{}.Process([]turbine.Record{r})
+
+	payload, err := out[0].Payload.Map()
+	if err != nil {
+		t.Fatalf("want no error, got %s", err.Error())
+	}
+
+	if _, ok := payload["user.id"]; !ok {
+		t.Fatalf("want user.id to exist, got missing: %s", string(out[0].Payload))
+	}
+
+	if _, ok := payload["actions.1"]; !ok {
+		t.Fatalf("want actions.1 to exist, got missing: %s", string(out[0].Payload))
+	}
 }

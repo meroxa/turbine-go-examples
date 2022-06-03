@@ -31,7 +31,7 @@ func (a App) Run(v turbine.Turbine) error {
 		return err
 	}
 
-	res := v.Process(rr, Cleanup{})
+	res := v.Process(rr, Flatten{})
 
 	dest, err := v.Resources("destination_name")
 	if err != nil {
@@ -46,9 +46,9 @@ func (a App) Run(v turbine.Turbine) error {
 	return nil
 }
 
-type Cleanup struct{}
+type Flatten struct{}
 
-func (f Cleanup) Process(stream []turbine.Record) []turbine.Record {
+func (f Flatten) Process(stream []turbine.Record) []turbine.Record {
 	for i, r := range stream {
 		err := transforms.Flatten(&r.Payload)
 		if err != nil {
