@@ -1,9 +1,6 @@
 package main
 
 import (
-	// Dependencies of the example data app
-	"crypto/md5"
-	"encoding/hex"
 	"log"
 
 	// Dependencies of Turbine
@@ -58,9 +55,4 @@ func (f Flatten) Process(stream []turbine.Record) []turbine.Record {
 		stream[i] = r
 	}
 	return stream
-}
-
-func consistentHash(s string) string {
-	h := md5.Sum([]byte(s))
-	return hex.EncodeToString(h[:])
 }
