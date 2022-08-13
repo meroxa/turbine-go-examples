@@ -20,7 +20,7 @@ type Turbine struct {
 }
 
 func New() Turbine {
-	ac, err := turbine.ReadAppConfig()
+	ac, err := turbine.ReadAppConfig("", "")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -34,9 +34,8 @@ func (t Turbine) Resources(name string) (turbine.Resource, error) {
 	}, nil
 }
 
-func (t Turbine) Process(rr turbine.Records, fn turbine.Function) (turbine.Records, turbine.RecordsWithErrors) {
+func (t Turbine) Process(rr turbine.Records, fn turbine.Function) turbine.Records {
 	var out turbine.Records
-	var outE turbine.RecordsWithErrors
 
 	// use reflection to access intentionally hidden fields
 	inVal := reflect.ValueOf(&rr).Elem().FieldByName("records")
@@ -45,10 +44,10 @@ func (t Turbine) Process(rr turbine.Records, fn turbine.Function) (turbine.Recor
 	in := reflect.NewAt(inVal.Type(), unsafe.Pointer(inVal.UnsafeAddr())).Elem()
 	inRR := in.Interface().([]turbine.Record)
 
-	rawOut, _ := fn.Process(inRR)
+	rawOut := fn.Process(inRR)
 	out = turbine.NewRecords(rawOut)
 
-	return out, outE
+	return out
 }
 
 type Resource struct {
@@ -121,10 +120,6 @@ func readFixtures(path, collection string) (turbine.Records, error) {
 	return turbine.NewRecords(rr), nil
 }
 
-func mapFixturesPath(name, path string) string {
-	return fmt.Sprintf("%s/%s.json", path, name)
-}
-
 func wrapRecord(m fixtureRecord) turbine.Record {
 	b, _ := json.Marshal(m.Value)
 
@@ -132,8 +127,9 @@ func wrapRecord(m fixtureRecord) turbine.Record {
 	if m.Timestamp == "" {
 		t = time.Now()
 	} else {
-		// TODO: parse timestamp
+		t, _ = time.Parse(time.RFC3339, m.Timestamp)
 	}
+
 	return turbine.Record{
 		Key:       m.Key,
 		Payload:   b,
