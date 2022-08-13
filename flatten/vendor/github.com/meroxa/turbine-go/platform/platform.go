@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/volatiletech/null/v8"
 
 	"github.com/meroxa/meroxa-go/pkg/meroxa"
 	"github.com/meroxa/turbine-go"
@@ -19,48 +20,45 @@ import (
 type Turbine struct {
 	client    *Client
 	functions map[string]turbine.Function
-	resources map[string]turbine.Resource
+	resources []turbine.Resource
 	deploy    bool
 	imageName string
 	config    turbine.AppConfig
 	secrets   map[string]string
+	gitSha    string
 }
 
-func New(deploy bool, imageName string) Turbine {
+var pipelineUUID string
+
+func New(deploy bool, imageName, appName, gitSha string) *Turbine {
 	c, err := newClient()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	ac, err := turbine.ReadAppConfig("")
+	ac, err := turbine.ReadAppConfig(appName, "")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return Turbine{
+	return &Turbine{
 		client:    c,
 		functions: make(map[string]turbine.Function),
-		resources: make(map[string]turbine.Resource),
+		resources: []turbine.Resource{},
 		imageName: imageName,
 		deploy:    deploy,
 		config:    ac,
 		secrets:   make(map[string]string),
+		gitSha:    gitSha,
 	}
 }
 
 func (t *Turbine) findPipeline(ctx context.Context) error {
-	p, err := t.client.GetPipelineByName(ctx, t.config.Pipeline)
-	if err != nil {
-		return err
-	}
-	log.Printf("pipeline: %q (%q)", p.Name, p.UUID)
-
-	return nil
+	_, err := t.client.GetPipelineByName(ctx, t.config.Pipeline)
+	return err
 }
 
 func (t *Turbine) createPipeline(ctx context.Context) error {
-	var input *meroxa.CreatePipelineInput
-
-	input = &meroxa.CreatePipelineInput{
+	input := &meroxa.CreatePipelineInput{
 		Name: t.config.Pipeline,
 		Metadata: map[string]interface{}{
 			"app":     t.config.Name,
@@ -72,18 +70,28 @@ func (t *Turbine) createPipeline(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	// Alternatively, if we want to hide pipeline information completely by not logging this out,
-	// we could create the application directly in Turbine
-	log.Printf("pipeline: %q (%q)", p.Name, p.UUID)
-
+	pipelineUUID = p.UUID
 	return nil
 }
 
-func (t Turbine) Resources(name string) (turbine.Resource, error) {
+func (t *Turbine) createApplication(ctx context.Context) error {
+	inputCreateApp := &meroxa.CreateApplicationInput{
+		Name:     t.config.Name,
+		Language: "golang",
+		GitSha:   t.gitSha,
+		Pipeline: meroxa.EntityIdentifier{UUID: null.StringFrom(pipelineUUID)},
+	}
+	_, err := t.client.CreateApplication(ctx, inputCreateApp)
+	return err
+}
+
+func (t *Turbine) Resources(name string) (turbine.Resource, error) {
 	if !t.deploy {
-		t.resources[name] = Resource{}
-		return Resource{}, nil
+		r := &Resource{
+			Name: name,
+		}
+		t.resources = append(t.resources, r)
+		return r, nil
 	}
 
 	ctx := context.Background()
@@ -96,38 +104,44 @@ func (t Turbine) Resources(name string) (turbine.Resource, error) {
 		}
 	}
 
-	cr, err := t.client.GetResourceByNameOrID(ctx, name)
+	resource, err := t.client.GetResourceByNameOrID(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("retrieved resource %s (%s)", cr.Name, cr.Type)
+	log.Printf("retrieved resource %s (%s)", resource.Name, resource.Type)
 
-	return Resource{
-		ID:     cr.ID,
-		Name:   cr.Name,
-		Type:   string(cr.Type),
+	u, _ := uuid.Parse(resource.UUID)
+	return &Resource{
+		UUID:   u,
+		Name:   resource.Name,
+		Type:   string(resource.Type),
 		client: t.client,
 		v:      t,
 	}, nil
 }
 
 type Resource struct {
-	ID     int
-	UUID   uuid.UUID
-	Name   string
-	Type   string
-	client meroxa.Client
-	v      Turbine
+	UUID        uuid.UUID
+	Name        string
+	Type        string
+	Source      bool
+	Destination bool
+	Collection  string
+	client      meroxa.Client
+	v           *Turbine
 }
 
-func (r Resource) Records(collection string, cfg turbine.ResourceConfigs) (turbine.Records, error) {
+func (r *Resource) Records(collection string, cfg turbine.ResourceConfigs) (turbine.Records, error) {
+	r.Collection = collection
+	r.Source = true
+
 	if r.client == nil {
 		return turbine.Records{}, nil
 	}
 
 	ci := &meroxa.CreateConnectorInput{
-		ResourceID:    r.ID,
+		ResourceName:  r.Name,
 		Configuration: cfg.ToMap(),
 		Type:          meroxa.ConnectorTypeSource,
 		Input:         collection,
@@ -150,11 +164,13 @@ func (r Resource) Records(collection string, cfg turbine.ResourceConfigs) (turbi
 	}, nil
 }
 
-func (r Resource) Write(rr turbine.Records, collection string) error {
+func (r *Resource) Write(rr turbine.Records, collection string) error {
+	r.Collection = collection
+	r.Destination = true
 	return r.WriteWithConfig(rr, collection, turbine.ResourceConfigs{})
 }
 
-func (r Resource) WriteWithConfig(rr turbine.Records, collection string, cfg turbine.ResourceConfigs) error {
+func (r *Resource) WriteWithConfig(rr turbine.Records, collection string, cfg turbine.ResourceConfigs) error {
 	// bail if dryrun
 	if r.client == nil {
 		return nil
@@ -180,7 +196,7 @@ func (r Resource) WriteWithConfig(rr turbine.Records, collection string, cfg tur
 	}
 
 	ci := &meroxa.CreateConnectorInput{
-		ResourceID:    r.ID,
+		ResourceName:  r.Name,
 		Configuration: connectorConfig,
 		Type:          meroxa.ConnectorTypeDestination,
 		Input:         rr.Stream,
@@ -192,6 +208,13 @@ func (r Resource) WriteWithConfig(rr turbine.Records, collection string, cfg tur
 		return err
 	}
 	log.Printf("created destination connector to resource %s and write records from stream %s to collection %s", r.Name, rr.Stream, collection)
+
+	err = r.v.createApplication(context.Background())
+	if err != nil {
+		return err
+	}
+	log.Printf("created application %q", r.v.config.Name)
+
 	return nil
 }
 
@@ -205,6 +228,7 @@ func (t Turbine) Process(rr turbine.Records, fn turbine.Function) turbine.Record
 	if t.deploy {
 		// create the function
 		cfi := &meroxa.CreateFunctionInput{
+			Name:        funcName,
 			InputStream: rr.Stream,
 			Image:       t.imageName,
 			EnvVars:     t.secrets,
@@ -241,13 +265,30 @@ func (t Turbine) ListFunctions() []string {
 	return funcNames
 }
 
-func (t Turbine) ListResources() []string {
-	var resourceNames []string
-	for name := range t.resources {
-		resourceNames = append(resourceNames, name)
-	}
+type resourceWithCollection struct {
+	Source      bool
+	Destination bool
+	Name        string
+	Collection  string
+}
 
-	return resourceNames
+func (t Turbine) ListResources() ([]resourceWithCollection, error) {
+	var resources []resourceWithCollection
+
+	for i := range t.resources {
+		r, ok := (t.resources[i]).(*Resource)
+		if !ok {
+			return nil, fmt.Errorf("Bad resource type.")
+		}
+		resources = append(resources, resourceWithCollection{
+			Source:      r.Source,
+			Destination: r.Destination,
+			Collection:  r.Collection,
+			Name:        r.Name,
+		})
+
+	}
+	return resources, nil
 }
 
 // RegisterSecret pulls environment variables with the same name and ships them as Env Vars for functions
