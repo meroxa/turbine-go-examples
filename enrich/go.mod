@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/clearbit/clearbit-go v1.1.0
-	github.com/meroxa/turbine-go v0.0.0-20220405102922-2d9a299a1e02
+	github.com/meroxa/turbine-go v0.0.0-20220421203002-fbd388ede780
 )
 
 require (
@@ -16,10 +16,9 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/meroxa/funtime v0.0.0-20220317202106-ddbc84f8a311 // indirect
 	github.com/meroxa/meroxa-go v0.0.0-20220318172432-2102d4a6c745 // indirect
 	github.com/oklog/run v1.1.1-0.20200508094559-c7096881717e // indirect
-	github.com/tidwall/gjson v1.14.0 // indirect
+	github.com/tidwall/gjson v1.14.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.4 // indirect

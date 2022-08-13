@@ -1,0 +1,5 @@
+{
+  "events": [
+    {"key": "1", "value": {"id": 1, "user": {"id": 100, "name": "alice", "email": "alice@example.com"}, "actions": ["register", "purchase"]}}
+  ]
+}

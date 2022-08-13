@@ -70,16 +70,29 @@ func (r Resource) Records(collection string, cfg turbine.ResourceConfigs) (turbi
 	return readFixtures(pwd, collection)
 }
 
-func (r Resource) Write(rr turbine.Records, collection string, cfg turbine.ResourceConfigs) error {
+func (r Resource) WriteWithConfig(rr turbine.Records, collection string, cfg turbine.ResourceConfigs) error {
 	prettyPrintRecords(r.Name, collection, turbine.GetRecords(rr))
 	return nil
 }
 
+func (r Resource) Write(rr turbine.Records, collection string) error {
+	return r.WriteWithConfig(rr, collection, turbine.ResourceConfigs{})
+}
+
 func prettyPrintRecords(name string, collection string, rr []turbine.Record) {
-	log.Printf("Processing %v record(s)...\n", len(rr))
+	fmt.Printf("=====================to %s (%s) resource=====================\n", name, collection)
 	for _, r := range rr {
-		log.Printf("%s (%s) => Key: %s; Payload: %s; Timestamp: %s\n", name, collection, r.Key, string(r.Payload), r.Timestamp)
+		payloadVal := string(r.Payload)
+		m, err := r.Payload.Map()
+		if err == nil {
+			b, err := json.MarshalIndent(m, "", "    ")
+			if err == nil {
+				payloadVal = string(b)
+			}
+		}
+		fmt.Println(payloadVal)
 	}
+	fmt.Printf("%d record(s) written\n", len(rr))
 }
 
 type fixtureRecord struct {

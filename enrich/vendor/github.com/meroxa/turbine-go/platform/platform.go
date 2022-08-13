@@ -3,15 +3,17 @@ package platform
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/meroxa/meroxa-go/pkg/meroxa"
-	"github.com/meroxa/turbine"
+	"github.com/meroxa/turbine-go"
 )
 
 type Turbine struct {
@@ -121,20 +123,9 @@ func (r Resource) Records(collection string, cfg turbine.ResourceConfigs) (turbi
 		return turbine.Records{}, nil
 	}
 
-	// TODO: ideally this should be handled on the platform
-	mapCfg := cfg.ToMap()
-	switch r.Type {
-	case "redshift", "postgres", "mysql": // JDBC
-		mapCfg["transforms"] = "createKey,extractInt"
-		mapCfg["transforms.createKey.fields"] = "id"
-		mapCfg["transforms.createKey.type"] = "org.apache.kafka.connect.transforms.ValueToKey"
-		mapCfg["transforms.extractInt.field"] = "id"
-		mapCfg["transforms.extractInt.type"] = "org.apache.kafka.connect.transforms.ExtractField$Key"
-	}
-
 	ci := &meroxa.CreateConnectorInput{
 		ResourceID:    r.ID,
-		Configuration: mapCfg,
+		Configuration: cfg.ToMap(),
 		Type:          meroxa.ConnectorTypeSource,
 		Input:         collection,
 		PipelineName:  r.v.config.Pipeline,
@@ -156,33 +147,38 @@ func (r Resource) Records(collection string, cfg turbine.ResourceConfigs) (turbi
 	}, nil
 }
 
-func (r Resource) Write(rr turbine.Records, collection string, cfg turbine.ResourceConfigs) error {
+func (r Resource) Write(rr turbine.Records, collection string) error {
+	return r.WriteWithConfig(rr, collection, turbine.ResourceConfigs{})
+}
+
+func (r Resource) WriteWithConfig(rr turbine.Records, collection string, cfg turbine.ResourceConfigs) error {
 	// bail if dryrun
 	if r.client == nil {
 		return nil
 	}
 
-	// TODO: ideally this should be handled on the platform
-	mapCfg := cfg.ToMap()
+	connectorConfig := cfg.ToMap()
 	switch r.Type {
 	case "redshift", "postgres", "mysql": // JDBC sink
-		mapCfg["table.name.format"] = strings.ToLower(collection)
-		mapCfg["pk.mode"] = "record_value"
-		mapCfg["pk.fields"] = "id"
-		if r.Type != "redshift" {
-			mapCfg["insert.mode"] = "upsert"
-		}
+		connectorConfig["table.name.format"] = strings.ToLower(collection)
+	case "mongodb":
+		connectorConfig["collection"] = strings.ToLower(collection)
 	case "s3":
-		mapCfg["aws_s3_prefix"] = strings.ToLower(collection) + "/"
-		mapCfg["value.converter"] = "org.apache.kafka.connect.json.JsonConverter"
-		mapCfg["value.converter.schemas.enable"] = "true"
-		mapCfg["format.output.type"] = "jsonl"
-		mapCfg["format.output.envelope"] = "true"
+		connectorConfig["aws_s3_prefix"] = strings.ToLower(collection) + "/"
+	case "snowflakedb":
+		r := regexp.MustCompile("^[a-zA-Z]{1}[a-zA-Z0-9_]*$")
+		matched := r.MatchString(collection)
+		if !matched {
+			return fmt.Errorf("%q is an invalid Snowflake name - must start with "+
+				"a letter and contain only letters, numbers, and underscores", collection)
+		}
+		connectorConfig["snowflake.topic2table.map"] =
+			fmt.Sprintf("%s:%s", rr.Stream, collection)
 	}
 
 	ci := &meroxa.CreateConnectorInput{
 		ResourceID:    r.ID,
-		Configuration: mapCfg,
+		Configuration: connectorConfig,
 		Type:          meroxa.ConnectorTypeDestination,
 		Input:         rr.Stream,
 		PipelineName:  r.v.config.Pipeline,
@@ -227,11 +223,6 @@ func (t Turbine) Process(rr turbine.Records, fn turbine.Function) (turbine.Recor
 	}
 
 	return out, outE
-}
-
-func (t Turbine) TriggerFunction(name string, in []turbine.Record) ([]turbine.Record, []turbine.RecordWithError) {
-	log.Printf("Triggered function %s", name)
-	return nil, nil
 }
 
 func (t Turbine) GetFunction(name string) (turbine.Function, bool) {

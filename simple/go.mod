@@ -2,17 +2,16 @@ module meroxa/turbine-go-examples/simple
 
 go 1.17
 
-require github.com/meroxa/turbine-go v0.0.0-20220405102922-2d9a299a1e02
+require github.com/meroxa/turbine-go v0.0.0-20220421203002-fbd388ede780
 
 require (
 	github.com/caarlos0/env/v6 v6.7.2 // indirect
 	github.com/cristalhq/jwt/v3 v3.0.14 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/meroxa/funtime v0.0.0-20220113012133-85e6e898fc73 // indirect
 	github.com/meroxa/meroxa-go v0.0.0-20220208195203-71ddc3133fab // indirect
 	github.com/oklog/run v1.1.1-0.20200508094559-c7096881717e // indirect
-	github.com/tidwall/gjson v1.14.0 // indirect
+	github.com/tidwall/gjson v1.14.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.2.4 // indirect

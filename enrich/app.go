@@ -32,7 +32,7 @@ func (a App) Run(v turbine.Turbine) error {
 	}
 	res, _ := v.Process(rr, EnrichUserData{})
 
-	err = db.Write(res, "user_activity_enriched", nil)
+	err = db.Write(res, "user_activity_enriched")
 	if err != nil {
 		return err
 	}
