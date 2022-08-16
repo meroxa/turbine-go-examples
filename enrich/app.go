@@ -30,7 +30,7 @@ func (a App) Run(v turbine.Turbine) error {
 	if err != nil {
 		return err
 	}
-	res, _ := v.Process(rr, EnrichUserData{})
+	res := v.Process(rr, EnrichUserData{})
 
 	err = db.Write(res, "user_activity_enriched")
 	if err != nil {
@@ -42,7 +42,7 @@ func (a App) Run(v turbine.Turbine) error {
 
 type EnrichUserData struct{}
 
-func (f EnrichUserData) Process(rr []turbine.Record) ([]turbine.Record, []turbine.RecordWithError) {
+func (f EnrichUserData) Process(rr []turbine.Record) []turbine.Record {
 	for i, r := range rr {
 		log.Printf("Got email: %s", r.Payload.Get("email"))
 		UserDetails, err := EnrichUserEmail(r.Payload.Get("email").(string))
@@ -63,5 +63,5 @@ func (f EnrichUserData) Process(rr []turbine.Record) ([]turbine.Record, []turbin
 		rr[i] = r
 	}
 
-	return rr, nil
+	return rr
 }

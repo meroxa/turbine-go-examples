@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/volatiletech/null/v8"
@@ -44,7 +45,6 @@ func (e EntityIdentifier) GetNameOrUUID() (string, error) {
 type client struct {
 	baseURL   *url.URL
 	userAgent string
-	token     string
 
 	httpClient *http.Client
 }
@@ -53,8 +53,13 @@ type client struct {
 type Client interface {
 	CreateApplication(ctx context.Context, input *CreateApplicationInput) (*Application, error)
 	DeleteApplication(ctx context.Context, name string) error
+	DeleteApplicationEntities(ctx context.Context, name string) (*http.Response, error)
 	GetApplication(ctx context.Context, name string) (*Application, error)
 	ListApplications(ctx context.Context) ([]*Application, error)
+
+	CreateBuild(ctx context.Context, input *CreateBuildInput) (*Build, error)
+	GetBuild(ctx context.Context, uuid string) (*Build, error)
+	GetBuildLogs(ctx context.Context, uuid string) (*http.Response, error)
 
 	CreateConnector(ctx context.Context, input *CreateConnectorInput) (*Connector, error)
 	DeleteConnector(ctx context.Context, nameOrID string) error
@@ -83,13 +88,13 @@ type Client interface {
 	PerformActionOnEnvironment(ctx context.Context, nameOrUUID string, input *RepairEnvironmentInput) (*Environment, error)
 
 	CreatePipeline(ctx context.Context, input *CreatePipelineInput) (*Pipeline, error)
-	DeletePipeline(ctx context.Context, id int) error
+	DeletePipeline(ctx context.Context, nameOrID string) error
 	GetPipeline(ctx context.Context, pipelineID int) (*Pipeline, error)
 	GetPipelineByName(ctx context.Context, name string) (*Pipeline, error)
 	ListPipelines(ctx context.Context) ([]*Pipeline, error)
-	ListPipelineConnectors(ctx context.Context, pipelineID int) ([]*Connector, error)
-	UpdatePipeline(ctx context.Context, pipelineID int, input *UpdatePipelineInput) (*Pipeline, error)
-	UpdatePipelineStatus(ctx context.Context, pipelineID int, action Action) (*Pipeline, error)
+	ListPipelineConnectors(ctx context.Context, pipelineNameOrID string) ([]*Connector, error)
+	UpdatePipeline(ctx context.Context, pipelineNameOrID string, input *UpdatePipelineInput) (*Pipeline, error)
+	UpdatePipelineStatus(ctx context.Context, pipelineNameOrID string, action Action) (*Pipeline, error)
 
 	CreateResource(ctx context.Context, input *CreateResourceInput) (*Resource, error)
 	DeleteResource(ctx context.Context, nameOrID string) error
@@ -101,11 +106,13 @@ type Client interface {
 
 	ListResourceTypes(ctx context.Context) ([]string, error)
 
+	CreateSource(ctx context.Context) (*Source, error)
+
 	ListTransforms(ctx context.Context) ([]*Transform, error)
 
 	GetUser(ctx context.Context) (*User, error)
 
-	MakeRequest(ctx context.Context, method string, path string, body interface{}, params url.Values) (*http.Response, error)
+	MakeRequest(ctx context.Context, method string, path string, body interface{}, params url.Values, headers http.Header) (*http.Response, error)
 }
 
 // New returns a Meroxa API client. To configure it provide a list of Options.
@@ -142,8 +149,8 @@ func New(options ...Option) (Client, error) {
 	return c, nil
 }
 
-func (c *client) MakeRequest(ctx context.Context, method, path string, body interface{}, params url.Values) (*http.Response, error) {
-	req, err := c.newRequest(ctx, method, path, body, params)
+func (c *client) MakeRequest(ctx context.Context, method, path string, body interface{}, params url.Values, headers http.Header) (*http.Response, error) {
+	req, err := c.newRequest(ctx, method, path, body, params, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +165,7 @@ func (c *client) MakeRequest(ctx context.Context, method, path string, body inte
 	return resp, nil
 }
 
-func (c *client) newRequest(ctx context.Context, method, path string, body interface{}, params url.Values) (*http.Request, error) {
+func (c *client) newRequest(ctx context.Context, method, path string, body interface{}, params url.Values, headers http.Header) (*http.Request, error) {
 	u, err := c.baseURL.Parse(path)
 	if err != nil {
 		return nil, err
@@ -180,6 +187,9 @@ func (c *client) newRequest(ctx context.Context, method, path string, body inter
 	req.Header.Add("Content-Type", jsonContentType)
 	req.Header.Add("Accept", jsonContentType)
 	req.Header.Add("User-Agent", c.userAgent)
+	for key, value := range headers {
+		req.Header.Add(key, strings.Join(value, ","))
+	}
 
 	// add params
 	if params != nil {

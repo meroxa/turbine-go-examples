@@ -25,9 +25,8 @@ type PipelineIdentifier struct {
 // Pipeline represents the Meroxa Pipeline type within the Meroxa API
 type Pipeline struct {
 	CreatedAt   time.Time              `json:"created_at"`
-	Environment *EnvironmentIdentifier `json:"environment,omitempty"`
-	ID          int                    `json:"id"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"` // @TODO metadata is unused in Platform-API, so deprecate over time
+	Environment *EntityIdentifier      `json:"environment,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 	Name        string                 `json:"name"`
 	State       PipelineState          `json:"state"`
 	UpdatedAt   time.Time              `json:"updated_at"`
@@ -38,7 +37,7 @@ type Pipeline struct {
 type CreatePipelineInput struct {
 	Name        string                 `json:"name"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	Environment *EnvironmentIdentifier `json:"environment,omitempty"`
+	Environment *EntityIdentifier      `json:"environment,omitempty"`
 }
 
 // UpdatePipelineInput represents the input when updating a Meroxa Pipeline
@@ -47,28 +46,9 @@ type UpdatePipelineInput struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// ComponentKind enum for Component "kinds" within Pipeline stages
-type ComponentKind int
-
-const (
-	// ConnectorComponent is a Pipeline stage component of type Connector
-	ConnectorComponent ComponentKind = 0
-
-	// FunctionComponent is a Pipeline stage component of type Function
-	FunctionComponent ComponentKind = 1
-)
-
-// PipelineStage represents the Meroxa PipelineStage type within the Meroxa API
-type PipelineStage struct {
-	ID            int           `json:"id"`
-	PipelineID    int           `json:"pipeline_id"`
-	ComponentID   int           `json:"component_id"`
-	ComponentKind ComponentKind `json:"component_kind"`
-}
-
 // CreatePipeline provisions a new Pipeline
 func (c *client) CreatePipeline(ctx context.Context, input *CreatePipelineInput) (*Pipeline, error) {
-	resp, err := c.MakeRequest(ctx, http.MethodPost, pipelinesBasePath, input, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPost, pipelinesBasePath, input, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,10 +68,10 @@ func (c *client) CreatePipeline(ctx context.Context, input *CreatePipelineInput)
 }
 
 // UpdatePipeline updates a pipeline
-func (c *client) UpdatePipeline(ctx context.Context, pipelineID int, input *UpdatePipelineInput) (*Pipeline, error) {
-	path := fmt.Sprintf("%s/%d", pipelinesBasePath, pipelineID)
+func (c *client) UpdatePipeline(ctx context.Context, pipelineNameOrID string, input *UpdatePipelineInput) (*Pipeline, error) {
+	path := fmt.Sprintf("%s/%s", pipelinesBasePath, pipelineNameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodPatch, path, input, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPatch, path, input, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +92,8 @@ func (c *client) UpdatePipeline(ctx context.Context, pipelineID int, input *Upda
 
 // @TODO implement pipeline actions
 // UpdatePipelineStatus updates the status of a pipeline
-func (c *client) UpdatePipelineStatus(ctx context.Context, pipelineID int, action Action) (*Pipeline, error) {
-	path := fmt.Sprintf("%s/%d/status", pipelinesBasePath, pipelineID)
+func (c *client) UpdatePipelineStatus(ctx context.Context, pipelineNameOrID string, action Action) (*Pipeline, error) {
+	path := fmt.Sprintf("%s/%s/status", pipelinesBasePath, pipelineNameOrID)
 
 	cr := struct {
 		State Action `json:"state,omitempty"`
@@ -121,7 +101,7 @@ func (c *client) UpdatePipelineStatus(ctx context.Context, pipelineID int, actio
 		State: action,
 	}
 
-	resp, err := c.MakeRequest(ctx, http.MethodPost, path, cr, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPost, path, cr, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +122,7 @@ func (c *client) UpdatePipelineStatus(ctx context.Context, pipelineID int, actio
 
 // ListPipelines returns an array of Pipelines (scoped to the calling user)
 func (c *client) ListPipelines(ctx context.Context) ([]*Pipeline, error) {
-	resp, err := c.MakeRequest(ctx, http.MethodGet, pipelinesBasePath, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, pipelinesBasePath, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +147,7 @@ func (c *client) GetPipelineByName(ctx context.Context, name string) (*Pipeline,
 		"name": {name},
 	}
 
-	resp, err := c.MakeRequest(ctx, http.MethodGet, pipelinesBasePath, nil, params)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, pipelinesBasePath, nil, params, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +169,7 @@ func (c *client) GetPipelineByName(ctx context.Context, name string) (*Pipeline,
 // GetPipeline returns a Pipeline with the given id
 func (c *client) GetPipeline(ctx context.Context, pipelineID int) (*Pipeline, error) {
 	path := fmt.Sprintf("%s/%d", pipelinesBasePath, pipelineID)
-	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -209,10 +189,10 @@ func (c *client) GetPipeline(ctx context.Context, pipelineID int) (*Pipeline, er
 }
 
 // DeletePipeline deletes the Pipeline with the given id
-func (c *client) DeletePipeline(ctx context.Context, id int) error {
-	path := fmt.Sprintf("%s/%d", pipelinesBasePath, id)
+func (c *client) DeletePipeline(ctx context.Context, nameOrID string) error {
+	path := fmt.Sprintf("%s/%s", pipelinesBasePath, nameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodDelete, path, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodDelete, path, nil, nil, nil)
 	if err != nil {
 		return err
 	}
