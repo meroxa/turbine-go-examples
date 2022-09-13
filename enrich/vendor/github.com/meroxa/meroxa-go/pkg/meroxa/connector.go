@@ -32,6 +32,10 @@ const (
 type ConnectorType string
 
 const (
+	// ConnectorTypeSource should be changed these since they are associated to `Type` where in fact we're representing
+	// source or destination connectors as part of their metadata not this attribute.
+	// `Type` should be simply a string (`jdbc-source`, `s3-destination`)
+	// They're currently being used in the CLI.
 	ConnectorTypeSource      ConnectorType = "source"
 	ConnectorTypeDestination ConnectorType = "destination"
 )
@@ -39,12 +43,11 @@ const (
 type Connector struct {
 	Configuration map[string]interface{} `json:"config"`
 	CreatedAt     time.Time              `json:"created_at"`
-	Environment   *EnvironmentIdentifier `json:"environment,omitempty"`
-	ID            int                    `json:"id"`
+	Environment   *EntityIdentifier      `json:"environment,omitempty"`
 	Metadata      map[string]interface{} `json:"metadata"`
 	Name          string                 `json:"name"`
-	PipelineID    int                    `json:"pipeline_id"`
 	PipelineName  string                 `json:"pipeline_name"`
+	ResourceName  string                 `json:"resource_name"`
 	Streams       map[string]interface{} `json:"streams"`
 	State         ConnectorState         `json:"state"`
 	Trace         string                 `json:"trace,omitempty"`
@@ -55,9 +58,8 @@ type Connector struct {
 
 type CreateConnectorInput struct {
 	Name          string                 `json:"name,omitempty"`
-	ResourceID    int                    `json:"resource_id"`
-	PipelineID    int                    `json:"pipeline_id,omitempty"`
-	PipelineName  string                 `json:"pipeline_name,omitempty"`
+	ResourceName  string                 `json:"resource_name"`
+	PipelineName  string                 `json:"pipeline_name"`
 	Configuration map[string]interface{} `json:"config,omitempty"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 	Type          ConnectorType          `json:"connector_type,omitempty"`
@@ -78,7 +80,7 @@ func (c *client) CreateConnector(ctx context.Context, input *CreateConnectorInpu
 		input.Configuration = map[string]interface{}{"input": input.Input}
 	}
 	input.Metadata = map[string]interface{}{"mx:connectorType": string(input.Type)}
-	resp, err := c.MakeRequest(ctx, http.MethodPost, connectorsBasePath, input, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPost, connectorsBasePath, input, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +110,7 @@ func (c *client) UpdateConnectorStatus(ctx context.Context, nameOrID string, sta
 		State: state,
 	}
 
-	resp, err := c.MakeRequest(ctx, http.MethodPost, path, cr, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPost, path, cr, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +133,7 @@ func (c *client) UpdateConnectorStatus(ctx context.Context, nameOrID string, sta
 func (c *client) UpdateConnector(ctx context.Context, nameOrID string, input *UpdateConnectorInput) (*Connector, error) {
 	path := fmt.Sprintf("%s/%s", connectorsBasePath, nameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodPatch, path, input, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPatch, path, input, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -151,10 +153,10 @@ func (c *client) UpdateConnector(ctx context.Context, nameOrID string, input *Up
 }
 
 // ListPipelineConnectors returns an array of Connectors (scoped to the calling user)
-func (c *client) ListPipelineConnectors(ctx context.Context, pipelineID int) ([]*Connector, error) {
-	path := fmt.Sprintf("/v1/pipelines/%d/connectors", pipelineID)
+func (c *client) ListPipelineConnectors(ctx context.Context, pipelineNameOrID string) ([]*Connector, error) {
+	path := fmt.Sprintf("%s/%s/connectors", pipelinesBasePath, pipelineNameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +177,7 @@ func (c *client) ListPipelineConnectors(ctx context.Context, pipelineID int) ([]
 
 // ListConnectors returns an array of Connectors (scoped to the calling user)
 func (c *client) ListConnectors(ctx context.Context) ([]*Connector, error) {
-	resp, err := c.MakeRequest(ctx, http.MethodGet, connectorsBasePath, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, connectorsBasePath, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +200,7 @@ func (c *client) ListConnectors(ctx context.Context) ([]*Connector, error) {
 func (c *client) GetConnectorByNameOrID(ctx context.Context, nameOrID string) (*Connector, error) {
 	path := fmt.Sprintf("%s/%s", connectorsBasePath, nameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +223,7 @@ func (c *client) GetConnectorByNameOrID(ctx context.Context, nameOrID string) (*
 func (c *client) DeleteConnector(ctx context.Context, nameOrID string) error {
 	path := fmt.Sprintf("%s/%s", connectorsBasePath, nameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodDelete, path, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodDelete, path, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -232,4 +234,15 @@ func (c *client) DeleteConnector(ctx context.Context, nameOrID string) error {
 	}
 
 	return nil
+}
+
+func filterConnectorsPerType(list []*Connector, cType ConnectorType) []*Connector {
+	connectors := make([]*Connector, 0)
+	for _, connector := range list {
+		if connector.Metadata != nil &&
+			connector.Metadata["mx:connectorType"] == string(cType) {
+			connectors = append(connectors, connector)
+		}
+	}
+	return connectors
 }

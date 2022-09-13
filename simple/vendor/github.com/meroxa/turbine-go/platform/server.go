@@ -34,8 +34,6 @@ func ServeFunc(f turbine.Function) error {
 	fn := struct{ ProtoWrapper }{}
 	fn.ProcessMethod = convertedFunc
 
-	//fn := LoggerFunc{}
-
 	addr := os.Getenv("MEROXA_FUNCTION_ADDR")
 	if addr == "" {
 		return fmt.Errorf("Missing MEROXA_FUNCTION_ADDR env var")
@@ -67,12 +65,9 @@ func ServeFunc(f turbine.Function) error {
 	return g.Run()
 }
 
-func wrapFrameworkFunc(f func([]turbine.Record) ([]turbine.Record, []turbine.RecordWithError)) func(ctx context.Context, record *proto.ProcessRecordRequest) (*proto.ProcessRecordResponse, error) {
+func wrapFrameworkFunc(f func([]turbine.Record) []turbine.Record) func(ctx context.Context, record *proto.ProcessRecordRequest) (*proto.ProcessRecordResponse, error) {
 	return func(ctx context.Context, req *proto.ProcessRecordRequest) (*proto.ProcessRecordResponse, error) {
-		rr, rre := f(protoRecordToValveRecord(req))
-		if rre != nil {
-			// TODO: handle
-		}
+		rr := f(protoRecordToValveRecord(req))
 		return turbineRecordToProto(rr), nil
 	}
 }
@@ -81,7 +76,7 @@ func protoRecordToValveRecord(req *proto.ProcessRecordRequest) []turbine.Record 
 	var rr []turbine.Record
 
 	for _, pr := range req.Records {
-		log.Printf("Received  %v", *pr)
+		log.Printf("Received  %v", pr)
 		vr := turbine.Record{
 			Key:       pr.GetKey(),
 			Payload:   turbine.Payload(pr.GetValue()),

@@ -17,6 +17,7 @@ func main() {
 var _ turbine.App = (*App)(nil)
 
 type App struct{}
+type Anonymize struct{}
 
 func (a App) Run(v turbine.Turbine) error {
 	db, err := v.Resources("demobagel")
@@ -29,7 +30,7 @@ func (a App) Run(v turbine.Turbine) error {
 		return err
 	}
 
-	res, _ := v.Process(rr, Anonymize{})
+	res := v.Process(rr, Anonymize{})
 	// second return is dead-letter queue
 
 	s3, err := v.Resources("s3")
@@ -44,9 +45,7 @@ func (a App) Run(v turbine.Turbine) error {
 	return nil
 }
 
-type Anonymize struct{}
-
-func (f Anonymize) Process(rr []turbine.Record) ([]turbine.Record, []turbine.RecordWithError) {
+func (f Anonymize) Process(rr []turbine.Record) []turbine.Record {
 	for i, r := range rr {
 		e := fmt.Sprintf("%s", r.Payload.Get("email"))
 		if e == "" {
@@ -61,7 +60,7 @@ func (f Anonymize) Process(rr []turbine.Record) ([]turbine.Record, []turbine.Rec
 		}
 		rr[i] = r
 	}
-	return rr, nil
+	return rr
 }
 
 func consistentHash(s string) string {

@@ -5,5 +5,6 @@
   "resources": {
     "demopg": "fixtures/pg.json",
     "sfdwh": "fixtures/sfdwh.json"
-  }
+  },
+  "vendor": "true"
 }

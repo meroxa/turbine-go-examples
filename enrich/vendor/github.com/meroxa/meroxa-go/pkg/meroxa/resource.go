@@ -38,7 +38,7 @@ type Credentials struct {
 // CreateResourceInput represents the input for a Meroxa Resource type we're creating within the Meroxa API
 type CreateResourceInput struct {
 	Credentials *Credentials            `json:"credentials,omitempty"`
-	Environment *EnvironmentIdentifier  `json:"environment,omitempty"`
+	Environment *EntityIdentifier       `json:"environment,omitempty"`
 	Metadata    map[string]interface{}  `json:"metadata,omitempty"`
 	Name        string                  `json:"name,omitempty"`
 	SSHTunnel   *ResourceSSHTunnelInput `json:"ssh_tunnel,omitempty"`
@@ -64,14 +64,14 @@ type ResourceStatus struct {
 
 // Resource represents the Meroxa Resource type within the Meroxa API
 type Resource struct {
-	ID          int                    `json:"id"`
+	UUID        string                 `json:"uuid"`
 	Type        ResourceType           `json:"type"`
 	Name        string                 `json:"name"`
 	URL         string                 `json:"url"`
 	Credentials *Credentials           `json:"credentials,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 	SSHTunnel   *ResourceSSHTunnel     `json:"ssh_tunnel,omitempty"`
-	Environment *EnvironmentIdentifier `json:"environment,omitempty"`
+	Environment *EntityIdentifier      `json:"environment,omitempty"`
 	Status      ResourceStatus         `json:"status"`
 	CreatedAt   time.Time              `json:"created_at"`
 	UpdatedAt   time.Time              `json:"updated_at"`
@@ -95,7 +95,7 @@ func (c *client) CreateResource(ctx context.Context, input *CreateResourceInput)
 		return nil, err
 	}
 
-	resp, err := c.MakeRequest(ctx, http.MethodPost, ResourcesBasePath, input, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPost, ResourcesBasePath, input, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (c *client) UpdateResource(ctx context.Context, nameOrID string, input *Upd
 		}
 	}
 
-	resp, err := c.MakeRequest(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", ResourcesBasePath, nameOrID), input, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", ResourcesBasePath, nameOrID), input, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (c *client) performResourceAction(ctx context.Context, nameOrID string, act
 		Action: action,
 	}
 
-	resp, err := c.MakeRequest(ctx, http.MethodPost, path, body, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodPost, path, body, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (c *client) performResourceAction(ctx context.Context, nameOrID string, act
 
 // ListResources returns an array of Resources (scoped to the calling user)
 func (c *client) ListResources(ctx context.Context) ([]*Resource, error) {
-	resp, err := c.MakeRequest(ctx, http.MethodGet, ResourcesBasePath, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, ResourcesBasePath, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (c *client) ListResources(ctx context.Context) ([]*Resource, error) {
 func (c *client) GetResourceByNameOrID(ctx context.Context, nameOrID string) (*Resource, error) {
 	path := fmt.Sprintf("%s/%s", ResourcesBasePath, nameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodGet, path, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func (c *client) GetResourceByNameOrID(ctx context.Context, nameOrID string) (*R
 func (c *client) DeleteResource(ctx context.Context, nameOrID string) error {
 	path := fmt.Sprintf("%s/%s", ResourcesBasePath, nameOrID)
 
-	resp, err := c.MakeRequest(ctx, http.MethodDelete, path, nil, nil)
+	resp, err := c.MakeRequest(ctx, http.MethodDelete, path, nil, nil, nil)
 	if err != nil {
 		return err
 	}
