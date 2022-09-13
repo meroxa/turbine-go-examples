@@ -26,12 +26,13 @@ type Turbine struct {
 	config    turbine.AppConfig
 	secrets   map[string]string
 	gitSha    string
+	appUUID   string
 }
 
 var pipelineUUID string
 
 func New(deploy bool, imageName, appName, gitSha string) *Turbine {
-	c, err := newClient()
+	c, err := NewClient()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -52,11 +53,13 @@ func New(deploy bool, imageName, appName, gitSha string) *Turbine {
 	}
 }
 
+// TODO: Remove once everything is under IR
 func (t *Turbine) findPipeline(ctx context.Context) error {
 	_, err := t.client.GetPipelineByName(ctx, t.config.Pipeline)
 	return err
 }
 
+// TODO: Remove once everything is under IR
 func (t *Turbine) createPipeline(ctx context.Context) error {
 	input := &meroxa.CreatePipelineInput{
 		Name: t.config.Pipeline,
@@ -74,6 +77,7 @@ func (t *Turbine) createPipeline(ctx context.Context) error {
 	return nil
 }
 
+// TODO: Remove once everything is under IR
 func (t *Turbine) createApplication(ctx context.Context) error {
 	inputCreateApp := &meroxa.CreateApplicationInput{
 		Name:     t.config.Name,
@@ -81,7 +85,8 @@ func (t *Turbine) createApplication(ctx context.Context) error {
 		GitSha:   t.gitSha,
 		Pipeline: meroxa.EntityIdentifier{UUID: null.StringFrom(pipelineUUID)},
 	}
-	_, err := t.client.CreateApplication(ctx, inputCreateApp)
+	a, err := t.client.CreateApplication(ctx, inputCreateApp)
+	t.appUUID = a.UUID
 	return err
 }
 
@@ -140,9 +145,15 @@ func (r *Resource) Records(collection string, cfg turbine.ResourceConfigs) (turb
 		return turbine.Records{}, nil
 	}
 
+	connectorConfig := cfg.ToMap()
+	switch r.Type {
+	case "kafka":
+		connectorConfig["conduit"] = "true" // only support Kafka connectors using Conduit so this is safe
+	}
+
 	ci := &meroxa.CreateConnectorInput{
 		ResourceName:  r.Name,
-		Configuration: cfg.ToMap(),
+		Configuration: connectorConfig,
 		Type:          meroxa.ConnectorTypeSource,
 		Input:         collection,
 		PipelineName:  r.v.config.Pipeline,
@@ -178,6 +189,9 @@ func (r *Resource) WriteWithConfig(rr turbine.Records, collection string, cfg tu
 
 	connectorConfig := cfg.ToMap()
 	switch r.Type {
+	case "kafka":
+		connectorConfig["conduit"] = "true" // only support Kafka connectors using Conduit so this is safe
+		connectorConfig["topic"] = strings.ToLower(collection)
 	case "redshift", "postgres", "mysql", "sqlserver": // JDBC sink
 		connectorConfig["table.name.format"] = strings.ToLower(collection)
 	case "mongodb":
@@ -209,18 +223,24 @@ func (r *Resource) WriteWithConfig(rr turbine.Records, collection string, cfg tu
 	}
 	log.Printf("created destination connector to resource %s and write records from stream %s to collection %s", r.Name, rr.Stream, collection)
 
-	err = r.v.createApplication(context.Background())
-	if err != nil {
-		return err
+	if r.v.appUUID == "" {
+		err = r.v.createApplication(context.Background())
+		if err != nil {
+			return err
+		}
+		log.Printf("created application %q", r.v.config.Name)
 	}
-	log.Printf("created application %q", r.v.config.Name)
 
 	return nil
 }
 
 func (t Turbine) Process(rr turbine.Records, fn turbine.Function) turbine.Records {
-	// register function
-	funcName := strings.ToLower(reflect.TypeOf(fn).Name())
+	// register function and associate it with the last gitsha
+	var (
+		funcName       = strings.ToLower(reflect.TypeOf(fn).Name())
+		funcNameGitSHA = fmt.Sprintf("%s-%.8s", funcName, t.gitSha)
+	)
+
 	t.functions[funcName] = fn
 
 	var out turbine.Records
@@ -228,7 +248,7 @@ func (t Turbine) Process(rr turbine.Records, fn turbine.Function) turbine.Record
 	if t.deploy {
 		// create the function
 		cfi := &meroxa.CreateFunctionInput{
-			Name:        funcName,
+			Name:        funcNameGitSHA,
 			InputStream: rr.Stream,
 			Image:       t.imageName,
 			EnvVars:     t.secrets,
@@ -265,22 +285,22 @@ func (t Turbine) ListFunctions() []string {
 	return funcNames
 }
 
-type resourceWithCollection struct {
+type ResourceWithCollection struct {
 	Source      bool
 	Destination bool
 	Name        string
 	Collection  string
 }
 
-func (t Turbine) ListResources() ([]resourceWithCollection, error) {
-	var resources []resourceWithCollection
+func (t Turbine) ListResources() ([]ResourceWithCollection, error) {
+	var resources []ResourceWithCollection
 
 	for i := range t.resources {
 		r, ok := (t.resources[i]).(*Resource)
 		if !ok {
 			return nil, fmt.Errorf("Bad resource type.")
 		}
-		resources = append(resources, resourceWithCollection{
+		resources = append(resources, ResourceWithCollection{
 			Source:      r.Source,
 			Destination: r.Destination,
 			Collection:  r.Collection,
@@ -300,4 +320,8 @@ func (t Turbine) RegisterSecret(name string) error {
 
 	t.secrets[name] = val
 	return nil
+}
+
+func (t Turbine) HandleSpec() (string, error) {
+	panic("unimplemented")
 }

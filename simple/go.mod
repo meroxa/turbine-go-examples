@@ -1,6 +1,6 @@
 module meroxa/turbine-go-examples/simple
 
-go 1.17
+go 1.19
 
 require github.com/meroxa/turbine-go v0.0.0-20220808165302-ff929376e177
 

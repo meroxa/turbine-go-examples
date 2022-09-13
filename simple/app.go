@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"log"
 
 	turbine "github.com/meroxa/turbine-go"
@@ -20,7 +19,7 @@ type App struct{}
 type Anonymize struct{}
 
 func (a App) Run(v turbine.Turbine) error {
-	db, err := v.Resources("demobagel")
+	db, err := v.Resources("demopg")
 	if err != nil {
 		return err
 	}
@@ -47,12 +46,7 @@ func (a App) Run(v turbine.Turbine) error {
 
 func (f Anonymize) Process(rr []turbine.Record) []turbine.Record {
 	for i, r := range rr {
-		e := fmt.Sprintf("%s", r.Payload.Get("email"))
-		if e == "" {
-			log.Printf("unable to find email value in %d record\n", i)
-			break
-		}
-		hashedEmail := consistentHash(e)
+		hashedEmail := consistentHash(r.Payload.Get("email").(string))
 		err := r.Payload.Set("email", hashedEmail)
 		if err != nil {
 			log.Println("error setting value: ", err)

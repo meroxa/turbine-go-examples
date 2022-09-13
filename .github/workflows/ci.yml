@@ -1,0 +1,113 @@
+name: CI
+on:
+  pull_request:
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ^1.19
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3  
+    - name: Build Enrich
+      working-directory: enrich
+      run: go build -mod=vendor ./...
+    - name: Build Flatten
+      working-directory: flatten
+      run: | # flatten is special
+        go mod vendor
+        go build -mod=vendor ./...
+    - name: Build Simple
+      working-directory: simple
+      run: go build -mod=vendor ./...
+  golangci:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ^1.19
+      - uses: actions/checkout@v3
+      - name: golangci-lint for enrich
+        uses: golangci/golangci-lint-action@v3
+        with:
+          args: --timeout 4m0s
+          working-directory: enrich
+      - name: Flatten vendor
+        working-directory: flatten
+        run: |
+          go mod vendor
+      - name: golangci-lint for flatten
+        uses: golangci/golangci-lint-action@v3
+        with:
+          args: --timeout 4m0s
+          working-directory: flatten
+      - name: golangci-lint for simple
+        uses: golangci/golangci-lint-action@v3
+        with:
+          args: --timeout 4m0s
+          working-directory: simple
+      - uses: actions/checkout@v3
+  vet:
+    name: Vet
+    runs-on: ubuntu-latest 
+    steps:
+      - uses: actions/checkout@v3
+      - name: Vet for enrich
+        working-directory: enrich
+        run: go vet ./...
+      - name: Vet for flatten
+        working-directory: flatten
+        run: |
+          go mod vendor
+          go vet ./...
+      - name: Vet for simple
+        working-directory: simple
+        run: go vet ./...
+  test:
+    name: Test
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ^1.19
+      - name: Run tests for enrich
+        working-directory: enrich
+        run: |
+         go test -v ./...
+      - name: Run tests for flatten
+        working-directory: flatten
+        run: |
+          go mod vendor
+          go test -v ./...
+      - name: Run tests for simple
+        working-directory: simple
+        run: |
+          go test -v ./...
+  run:
+    name: Run
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install CLI
+        run: brew tap meroxa/taps && brew install meroxa
+      - name: Run simple with CLI
+        working-directory: simple
+        run: |
+          meroxa apps run
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ^1.19
+      - name: Run flatten with CLI
+        working-directory: flatten
+        run: |
+          go mod vendor
+          meroxa apps run
+          
+    
