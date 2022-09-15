@@ -2,7 +2,7 @@ module github.com/meroxa/flatten
 
 go 1.19
 
-require github.com/meroxa/turbine-go v0.0.0-20220908041522-a21df8ee23b3
+require github.com/meroxa/turbine-go v0.0.0-20220914174030-f35bdc304176
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1 // indirect
@@ -12,7 +12,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/jeremywohl/flatten v1.0.1 // indirect
-	github.com/meroxa/meroxa-go v0.0.0-20220912230249-20686297f457 // indirect
+	github.com/meroxa/meroxa-go v0.0.0-20220915173905-789eb4683302 // indirect
 	github.com/oklog/run v1.1.1-0.20200508094559-c7096881717e // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -28,7 +28,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220913154956-18f8339a66a5 // indirect
+	google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de // indirect
 	google.golang.org/grpc v1.49.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )

@@ -24,10 +24,10 @@ github.com/google/uuid
 # github.com/jeremywohl/flatten v1.0.1
 ## explicit
 github.com/jeremywohl/flatten
-# github.com/meroxa/meroxa-go v0.0.0-20220912230249-20686297f457
+# github.com/meroxa/meroxa-go v0.0.0-20220915173905-789eb4683302
 ## explicit; go 1.17
 github.com/meroxa/meroxa-go/pkg/meroxa
-# github.com/meroxa/turbine-go v0.0.0-20220908041522-a21df8ee23b3
+# github.com/meroxa/turbine-go v0.0.0-20220914174030-f35bdc304176
 ## explicit; go 1.18
 github.com/meroxa/turbine-go
 github.com/meroxa/turbine-go/local
@@ -100,7 +100,7 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20220913154956-18f8339a66a5
+# google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.49.0
