@@ -52,12 +52,28 @@ func (f EnrichUserData) Process(rr []turbine.Record) []turbine.Record {
 		}
 		log.Printf("Got UserDetails: %+v", UserDetails)
 		err = r.Payload.Set("full_name", UserDetails.FullName)
+		if err != nil {
+			log.Println("error setting full_name value: ", err)
+			break
+		}
 		err = r.Payload.Set("company", UserDetails.Company)
+		if err != nil {
+			log.Println("error setting company value: ", err)
+			break
+		}
 		err = r.Payload.Set("location", UserDetails.Location)
+		if err != nil {
+			log.Println("error setting location value: ", err)
+			break
+		}
 		err = r.Payload.Set("role", UserDetails.Role)
+		if err != nil {
+			log.Println("error setting role value: ", err)
+			break
+		}
 		err = r.Payload.Set("seniority", UserDetails.Seniority)
 		if err != nil {
-			log.Println("error setting value: ", err)
+			log.Println("error setting seniority value: ", err)
 			break
 		}
 		rr[i] = r
