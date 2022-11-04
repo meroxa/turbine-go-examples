@@ -100,6 +100,7 @@ jobs:
       - name: Run simple with CLI
         working-directory: simple
         run: |
+          go mod vendor
           meroxa apps run
       - uses: actions/setup-go@v3
         with:
