@@ -1,0 +1,8 @@
+{
+  "name": "postgres_to_kafka",
+  "language": "golang",
+  "environment": "common",
+  "resources": {
+    "source_name": "fixtures/demo-cdc.json"
+  }
+}
