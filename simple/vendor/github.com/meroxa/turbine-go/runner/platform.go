@@ -6,9 +6,8 @@ package runner
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
-	"os"
+	"strings"
 
 	"github.com/meroxa/turbine-go"
 	"github.com/meroxa/turbine-go/platform"
@@ -31,7 +30,7 @@ type TurbinePlatformRunner interface {
 	GetFunction(name string) (turbine.Function, bool)
 	ListFunctions() []string
 	ListResources() ([]platform.ResourceWithCollection, error)
-	HandleSpec() (string, error)
+	DeploymentSpec() (string, error)
 }
 
 func Start(app turbine.App) {
@@ -59,11 +58,11 @@ func Start(app turbine.App) {
 		log.Fatalln(err)
 	}
 	if spec != "" {
-		json_spec, err := pv.HandleSpec()
+		json_spec, err := pv.DeploymentSpec()
 		if err != nil {
 			log.Fatalln(err)
 		}
-		fmt.Println(json_spec)
+		log.Printf("turbine-response: %s\n", json_spec)
 	}
 
 	if ServeFunction != "" {
@@ -78,7 +77,7 @@ func Start(app turbine.App) {
 	}
 
 	if ListFunctions {
-		log.Printf("available functions: %s", pv.ListFunctions())
+		log.Printf("turbine-response: [%s]", strings.Join(pv.ListFunctions(), ", "))
 	}
 
 	if ListResources {
@@ -87,9 +86,10 @@ func Start(app turbine.App) {
 			log.Fatal(err)
 		}
 
-		enc := json.NewEncoder(os.Stdout)
-		if err := enc.Encode(rr); err != nil {
+		bytes, err := json.Marshal(rr)
+		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("turbine-response: %s\n", string(bytes))
 	}
 }
