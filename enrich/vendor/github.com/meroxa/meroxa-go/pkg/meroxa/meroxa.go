@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/volatiletech/null/v8"
 )
 
 const (
@@ -28,30 +26,46 @@ type EnvironmentIdentifier struct {
 
 // EntityIdentifier represents one or both values for a Meroxa Entity
 type EntityIdentifier struct {
-	UUID null.String `json:"uuid,omitempty"`
-	Name null.String `json:"name,omitempty"`
+	UUID string `json:"uuid,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 func (e EntityIdentifier) GetNameOrUUID() (string, error) {
-	if e.Name.Valid {
-		return e.Name.String, nil
-	} else if e.UUID.Valid {
-		return e.UUID.String, nil
+	if e.Name != "" {
+		return e.Name, nil
+	} else if e.UUID != "" {
+		return e.UUID, nil
 	}
 	return "", fmt.Errorf("identifier has neither name or UUID")
 }
 
 // client represents the Meroxa API Client
 type client struct {
-	baseURL   *url.URL
-	userAgent string
+	requester
+}
 
+type Requester struct {
+	baseURL    *url.URL
 	httpClient *http.Client
+	headers    http.Header
+	userAgent  string
+}
+
+type requester interface {
+	MakeRequest(ctx context.Context, method string, path string, body interface{}, params url.Values, headers http.Header) (*http.Response, error)
+}
+
+type account interface {
+	ListAccounts(ctx context.Context) ([]*Account, error)
 }
 
 // Client represents the interface to the Meroxa API
 type Client interface {
+	requester
+	account
+
 	CreateApplication(ctx context.Context, input *CreateApplicationInput) (*Application, error)
+	CreateApplicationV2(ctx context.Context, input *CreateApplicationInput) (*Application, error)
 	DeleteApplication(ctx context.Context, name string) error
 	DeleteApplicationEntities(ctx context.Context, name string) (*http.Response, error)
 	GetApplication(ctx context.Context, name string) (*Application, error)
@@ -68,6 +82,10 @@ type Client interface {
 	ListConnectors(ctx context.Context) ([]*Connector, error)
 	UpdateConnector(ctx context.Context, nameOrID string, input *UpdateConnectorInput) (*Connector, error)
 	UpdateConnectorStatus(ctx context.Context, nameOrID string, state Action) (*Connector, error)
+
+	GetDeployment(ctx context.Context, appIdentifier string, depUUID string) (*Deployment, error)
+	GetLatestDeployment(ctx context.Context, appIdentifier string) (*Deployment, error)
+	CreateDeployment(ctx context.Context, input *CreateDeploymentInput) (*Deployment, error)
 
 	CreateFunction(ctx context.Context, input *CreateFunctionInput) (*Function, error)
 	GetFunction(ctx context.Context, nameOrUUID string) (*Function, error)
@@ -103,6 +121,7 @@ type Client interface {
 	UpdateResource(ctx context.Context, nameOrID string, input *UpdateResourceInput) (*Resource, error)
 	RotateTunnelKeyForResource(ctx context.Context, nameOrID string) (*Resource, error)
 	ValidateResource(ctx context.Context, nameOrID string) (*Resource, error)
+	IntrospectResource(ctx context.Context, nameOrID string) (*ResourceIntrospection, error)
 
 	ListResourceTypes(ctx context.Context) ([]string, error)
 
@@ -111,8 +130,6 @@ type Client interface {
 	ListTransforms(ctx context.Context) ([]*Transform, error)
 
 	GetUser(ctx context.Context) (*User, error)
-
-	MakeRequest(ctx context.Context, method string, path string, body interface{}, params url.Values, headers http.Header) (*http.Response, error)
 }
 
 // New returns a Meroxa API client. To configure it provide a list of Options.
@@ -121,16 +138,17 @@ type Client interface {
 // which takes care of authentication.
 //
 // Example creating an authenticated client:
-//  c, err := New(
-//      WithAuthentication(auth.DefaultConfig(), accessToken, refreshToken),
-//  )
+//
+//	c, err := New(
+//	    WithAuthentication(auth.DefaultConfig(), accessToken, refreshToken),
+//	)
 func New(options ...Option) (Client, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	c := &client{
+	r := &Requester{
 		baseURL:   u,
 		userAgent: "meroxa-go",
 		httpClient: &http.Client{
@@ -138,25 +156,26 @@ func New(options ...Option) (Client, error) {
 			Transport: http.DefaultTransport,
 		},
 	}
-
 	for _, opt := range options {
-		err := opt(c)
+		err := opt(r)
 		if err != nil {
 			return nil, err
 		}
 	}
-
+	c := &client{
+		requester: r,
+	}
 	return c, nil
 }
 
-func (c *client) MakeRequest(ctx context.Context, method, path string, body interface{}, params url.Values, headers http.Header) (*http.Response, error) {
-	req, err := c.newRequest(ctx, method, path, body, params, headers)
+func (r *Requester) MakeRequest(ctx context.Context, method, path string, body interface{}, params url.Values, headers http.Header) (*http.Response, error) {
+	req, err := r.newRequest(ctx, method, path, body, params, headers)
 	if err != nil {
 		return nil, err
 	}
 
 	// Merge params
-	resp, err := c.httpClient.Do(req)
+	resp, err := r.httpClient.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -165,15 +184,15 @@ func (c *client) MakeRequest(ctx context.Context, method, path string, body inte
 	return resp, nil
 }
 
-func (c *client) newRequest(ctx context.Context, method, path string, body interface{}, params url.Values, headers http.Header) (*http.Request, error) {
-	u, err := c.baseURL.Parse(path)
+func (r *Requester) newRequest(ctx context.Context, method, path string, body interface{}, params url.Values, headers http.Header) (*http.Request, error) {
+	u, err := r.baseURL.Parse(path)
 	if err != nil {
 		return nil, err
 	}
 
 	buf := new(bytes.Buffer)
 	if body != nil {
-		if err := c.encodeBody(buf, body); err != nil {
+		if err := r.encodeBody(buf, body); err != nil {
 			return nil, err
 		}
 	}
@@ -184,9 +203,12 @@ func (c *client) newRequest(ctx context.Context, method, path string, body inter
 	}
 
 	// add global headers to request
+	if r.headers != nil {
+		req.Header = r.headers
+	}
 	req.Header.Add("Content-Type", jsonContentType)
 	req.Header.Add("Accept", jsonContentType)
-	req.Header.Add("User-Agent", c.userAgent)
+	req.Header.Add("User-Agent", r.userAgent)
 	for key, value := range headers {
 		req.Header.Add(key, strings.Join(value, ","))
 	}
@@ -205,7 +227,7 @@ func (c *client) newRequest(ctx context.Context, method, path string, body inter
 	return req, nil
 }
 
-func (c *client) encodeBody(w io.Writer, v interface{}) error {
+func (r *Requester) encodeBody(w io.Writer, v interface{}) error {
 	if v == nil {
 		return nil
 	}
