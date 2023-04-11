@@ -3,6 +3,7 @@ package v2
 import (
 	"fmt"
 
+	"github.com/meroxa/turbine-core/pkg/ir"
 	"github.com/meroxa/turbine-go"
 	"github.com/meroxa/turbine-go/platform"
 )
@@ -43,7 +44,7 @@ func (t *Turbine) ListResources() ([]platform.ResourceWithCollection, error) {
 	return resources, nil
 }
 
-func (r *Resource) Records(collection string, cfg turbine.ResourceConfigs) (turbine.Records, error) {
+func (r *Resource) Records(collection string, cfg turbine.ConnectionOptions) (turbine.Records, error) {
 	records := turbine.Records{}
 	if collection == "" {
 		return records, fmt.Errorf("please provide a collection name to Records()")
@@ -59,8 +60,15 @@ func (r *Resource) Records(collection string, cfg turbine.ResourceConfigs) (turb
 		}
 	}
 
-	r.v.deploySpec.Connectors = append(r.v.deploySpec.Connectors,
-		specConnector{Type: "source", Resource: r.Name, Collection: collection, Config: cfg.ToMap()})
+	r.v.deploySpec.Connectors = append(
+		r.v.deploySpec.Connectors,
+		ir.ConnectorSpec{
+			Type:       ir.ConnectorSource,
+			Resource:   r.Name,
+			Collection: collection,
+			Config:     cfg.ToMap(),
+		},
+	)
 	return records, nil
 }
 
@@ -68,10 +76,10 @@ func (r *Resource) Write(rr turbine.Records, collection string) error {
 	if collection == "" {
 		return fmt.Errorf("please provide a collection name to Write()")
 	}
-	return r.WriteWithConfig(rr, collection, turbine.ResourceConfigs{})
+	return r.WriteWithConfig(rr, collection, turbine.ConnectionOptions{})
 }
 
-func (r *Resource) WriteWithConfig(rr turbine.Records, collection string, cfg turbine.ResourceConfigs) error {
+func (r *Resource) WriteWithConfig(rr turbine.Records, collection string, cfg turbine.ConnectionOptions) error {
 	// This function may be called zero or more times.
 	if collection == "" {
 		return fmt.Errorf("please provide a collection name to WriteWithConfig()")
@@ -79,7 +87,14 @@ func (r *Resource) WriteWithConfig(rr turbine.Records, collection string, cfg tu
 	r.Collection = collection
 	r.Destination = true
 
-	r.v.deploySpec.Connectors = append(r.v.deploySpec.Connectors,
-		specConnector{Type: "destination", Resource: r.Name, Collection: collection, Config: cfg.ToMap()})
+	r.v.deploySpec.Connectors = append(
+		r.v.deploySpec.Connectors,
+		ir.ConnectorSpec{
+			Type:       ir.ConnectorDestination,
+			Resource:   r.Name,
+			Collection: collection,
+			Config:     cfg.ToMap(),
+		},
+	)
 	return nil
 }

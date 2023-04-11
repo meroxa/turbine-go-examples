@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/meroxa/turbine-core/pkg/ir"
 	"github.com/meroxa/turbine-go"
 	"github.com/meroxa/turbine-go/platform"
 )
@@ -16,48 +17,13 @@ type Turbine struct {
 	functions   map[string]turbine.Function
 	resources   []turbine.Resource
 	deploy      bool
-	deploySpec  *deploySpec
+	deploySpec  *ir.DeploymentSpec
 	specVersion string
 	imageName   string
 	appName     string
 	config      turbine.AppConfig
 	secrets     map[string]string
 	gitSha      string
-}
-
-type deploySpec struct {
-	Secrets    map[string]string `json:"secrets,omitempty"`
-	Connectors []specConnector   `json:"connectors"`
-	Functions  []specFunction    `json:"functions,omitempty"`
-	Definition specDefinition    `json:"definition"`
-}
-
-type specConnector struct {
-	Type       string                 `json:"type"`
-	Resource   string                 `json:"resource"`
-	Collection string                 `json:"collection"`
-	Config     map[string]interface{} `json:"config,omitempty"`
-}
-
-type specFunction struct {
-	Name  string `json:"name"`
-	Image string `json:"image"`
-}
-
-type specDefinition struct {
-	AppName  string       `json:"app_name"`
-	GitSha   string       `json:"git_sha"`
-	Metadata specMetadata `json:"turbine"`
-}
-
-type specMetadata struct {
-	Turbine     specTurbine `json:"turbine"`
-	SpecVersion string      `json:"spec_version"`
-}
-
-type specTurbine struct {
-	Language string `json:"language"`
-	Version  string `json:"version"`
 }
 
 func New(deploy bool, imageName, appName, gitSha, spec string) *Turbine {
@@ -77,7 +43,7 @@ func New(deploy bool, imageName, appName, gitSha, spec string) *Turbine {
 		imageName:   imageName,
 		appName:     appName,
 		deploy:      deploy,
-		deploySpec:  &deploySpec{},
+		deploySpec:  &ir.DeploymentSpec{},
 		specVersion: spec,
 		config:      ac,
 		secrets:     make(map[string]string),
@@ -85,7 +51,7 @@ func New(deploy bool, imageName, appName, gitSha, spec string) *Turbine {
 	}
 }
 
-func (t *Turbine) HandleSpec() (string, error) {
+func (t *Turbine) DeploymentSpec() (string, error) {
 	t.deploySpec.Secrets = t.secrets
 
 	version, err := getGoVersion()
@@ -93,20 +59,18 @@ func (t *Turbine) HandleSpec() (string, error) {
 		return "", err
 	}
 
-	t.deploySpec.Definition = specDefinition{
-		AppName: t.appName,
-		GitSha:  t.gitSha,
-		Metadata: specMetadata{
-			Turbine: specTurbine{
-				Language: "golang",
+	t.deploySpec.Definition = ir.DefinitionSpec{
+		GitSha: t.gitSha,
+		Metadata: ir.MetadataSpec{
+			Turbine: ir.TurbineSpec{
+				Language: ir.GoLang,
 				Version:  version,
 			},
 			SpecVersion: t.specVersion,
 		},
 	}
 
-	bytes, err := json.MarshalIndent(t.deploySpec, "", "    ")
-	// @TODO send deployment spec to Platform API if a deployment
+	bytes, err := json.Marshal(t.deploySpec)
 	return string(bytes), err
 }
 
